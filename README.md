@@ -2,10 +2,10 @@
 This repository will store files and materials (excluding data files for storage purposes) for our 2025 capstone project: Glaucoma Screening with AI. 
 
 ## Authors:
-Anjali Goel
-Daniel Luettgen
-Trenton Slocum
-Hildegard Younce 
+Anjali Goel\
+Daniel Luettgen\
+Trenton Slocum\
+Hildegard Younce\ 
 
-Sponsor: Dr. Arjun Dirghangi
-Faculty Mentor: Dr. Aiying Zhang 
+Sponsor: Dr. Arjun Dirghangi\
+Faculty Mentor: Dr. Aiying Zhang\ 
