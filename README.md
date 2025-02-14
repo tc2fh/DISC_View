@@ -3,13 +3,9 @@ This repository will store files and materials (excluding data files for storage
 
 ## Authors:
 Anjali Goel
-
 Daniel Luettgen
-
 Trenton Slocum
-
 Hildegard Younce 
 
 Sponsor: Dr. Arjun Dirghangi
-
 Faculty Mentor: Dr. Aiying Zhang 
