@@ -1,0 +1,2 @@
+# Glaucoma-Screening-Capstone
+This repository will store files and materials (excluding data files for storage purposes) for our 2025 capstone project: Glaucoma Screening with AI. 
