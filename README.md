@@ -5,7 +5,7 @@ This repository will store files and materials (excluding data files for storage
 Anjali Goel\
 Daniel Luettgen\
 Trenton Slocum\
-Hildegard Younce\ 
+Hildegard Younce 
 
 Sponsor: Dr. Arjun Dirghangi\
-Faculty Mentor: Dr. Aiying Zhang\ 
+Faculty Mentor: Dr. Aiying Zhang 
