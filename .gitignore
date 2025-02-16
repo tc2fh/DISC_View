@@ -39,5 +39,5 @@ data/
 *.key
 *.pem
 
-# Ignore data files
+# Ignore data directory
 /data/
