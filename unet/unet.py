@@ -3,6 +3,7 @@ Sources:
 https://github.com/mateuszbuda/brain-segmentation-pytorch/blob/master/unet.py
 https://github.com/milesial/Pytorch-UNet/blob/master/unet/unet_parts.py
 https://www.geeksforgeeks.org/u-net-architecture-explained/
+https://www.kaggle.com/code/arnavjain1/unet-segmentation-of-oc-od 
 """
 
 import torch
