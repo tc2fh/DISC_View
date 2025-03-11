@@ -11,6 +11,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class ConvBlockDown(nn.Module):
+    """ A single contracting block with two convolutions + max pooling. """
     def __init__(self, in_channels, out_channels):
         super().__init__()
         # add batch normalization?
@@ -19,66 +20,88 @@ class ConvBlockDown(nn.Module):
             nn.ReLU(inplace=True),
             nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1),
             nn.ReLU(inplace=True),
-            nn.MaxPool2d(2)
         )
+        self.pool = nn.MaxPool2d(2)
     
     def forward(self, x):
-        return self.block_down(x)
+        # Keep output before pooling for future skip connections
+        feature_map = self.block_down(x)
+        pooled = self.pool(feature_map)
+        return feature_map, pooled
 
 class Contracting(nn.Module):
-    def __init__(self, in_channels, out_channels):
+    """ Encoder that stores feature maps for later concatenation. """
+    def __init__(self, in_channels):
         super().__init__()
 
-        self.contract_layer = nn.Sequential(
-            ConvBlockDown(in_channels, out_channels), # (1, 112)
-            ConvBlockDown(out_channels, out_channels*2), # (112, 224)
-            ConvBlockDown(out_channels*2, out_channels*4), # (224, 448)
-        )
+        self.block1 = ConvBlockDown(in_channels, 112),
+        self.block2 = ConvBlockDown(112, 224), 
+        self.block3 = ConvBlockDown(224, 448),
 
         self.connecting_layer = nn.Sequential(
-            nn.Conv2d(out_channels*4, out_channels*4, kernel_size=3, padding=1),
+            nn.Conv2d(448, 448, kernel_size=3, padding=1),
             nn.ReLU(inplace=True),
-            nn.Conv2d(out_channels*4, out_channels*4, kernel_size=3, padding=1),
+            nn.Conv2d(448, 448, kernel_size=3, padding=1),
             nn.ReLU(inplace=True)
         )
 
     def forward(self, x):
-        x = self.contract_layer(x)
-        return self.connecting_layer(x)
+        # Save feature maps for skip connections
+        skip1, x = self.block1(x)
+        skip2, x = self.block(x)
+        skip3, x = self.block(x)
+
+        # Bottleneck layer
+        x = self.connecting_layer(x)
+        return x, [skip1, skip2, skip3]
     
 class ConvBlockUp(nn.Module):
+    """ A single expanding block that upsamples and concatenates with corresponding contracting block. """
     def __init__(self, in_channels, out_channels):
         super().__init__()
 
+        self.upsample = nn.ConvTranspose2d(in_channels, out_channels, kernel_size=2, stride=1)
         self.block_up = nn.Sequential(
-            # Upsampling layer
-            nn.ConvTranspose2d(in_channels, out_channels, kernel_size=2, stride=1),
-            # TO DO: Add concatenation layer
-            nn.Dropout(),
             nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
             nn.ReLU(inplace=True),
             nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1),
             nn.ReLU(inplace=True)
         )
 
-    def forward(self, x):
+    def forward(self, x, skip_connection):
+        # Upsample to match skip connection size
+        x = self.upsample(x)
+
+        # Concatenate along channel dimension
+        x = torch.cat([x, skip_connection], dim=1)
         return self.block_up(x)
 
 class Expanding(nn.Module):
-    def __init__(self, in_channels, out_channels):
+    """ Decoder that gradually reconstructs the segmented mask. """
+    def __init__(self):
         super().__init__()
 
-        self.expanding_layer = nn.Sequential(
-            ConvBlockUp(in_channels, out_channels), # (448, 224)
-            ConvBlockUp(out_channels, out_channels // 2), # (224, 112)
-            ConvBlockUp(out_channels // 2, out_channels // 2) # (112, 112)
-        )
+        self.block1 = ConvBlockUp(448, 224),
+        self.block2 = ConvBlockUp(224, 112), 
+        self.block3 = ConvBlockUp(112, 112) 
 
-        self.sigmoid_layer = nn.Sequential(
-            nn.Conv2d(out_channels // 2, 1, kernel_size=1), # need padding?
-            nn.Sigmoid()
-        )
+        self.final_conv = nn.Conv2d(112, 1, kernel_size=1)
+        self.sigmoid = nn.Sigmoid()
 
-    def forward(self,x):
-        x = self.expanding_layer(x)
-        return self.sigmoid_layer(x)
+    def forward(self,x, skip_connections):
+        x = self.block1(x, skip_connections[0])
+        x = self.block2(x, skip_connections[1])
+        x = self.block3(x, skip_connections[2])
+        x = self.sigmoid(self.final_conv(x))
+        return x
+    
+class UNet(nn.Module):
+    """ Full UNet combining encoder and decoder. """
+    def __init__(self, in_channels=1):
+        super().__init__()
+        self.encoder = Contracting(in_channels)
+        self.decoder = Expanding()
+
+    def forward(self, x):
+        x, skip_connections = self.encoder(x)
+        return self.decoder(x, skip_connections)
