@@ -25,18 +25,18 @@ class ConvBlockDown(nn.Module):
     
     def forward(self, x):
         # Keep output before pooling for future skip connections
-        feature_map = self.block_down(x)
-        pooled = self.pool(feature_map)
-        return feature_map, pooled
+        skip = self.block_down(x)
+        pooled = self.pool(skip)
+        return skip, pooled
 
 class Contracting(nn.Module):
     """ Encoder that stores feature maps for later concatenation. """
     def __init__(self, in_channels):
         super().__init__()
 
-        self.block1 = ConvBlockDown(in_channels, 112),
-        self.block2 = ConvBlockDown(112, 224), 
-        self.block3 = ConvBlockDown(224, 448),
+        self.block1 = ConvBlockDown(in_channels, 112) 
+        self.block2 = ConvBlockDown(112, 224) 
+        self.block3 = ConvBlockDown(224, 448)
 
         self.connecting_layer = nn.Sequential(
             nn.Conv2d(448, 448, kernel_size=3, padding=1),
@@ -48,21 +48,22 @@ class Contracting(nn.Module):
     def forward(self, x):
         # Save feature maps for skip connections
         skip1, x = self.block1(x)
-        skip2, x = self.block(x)
-        skip3, x = self.block(x)
+        skip2, x = self.block2(x)
+        skip3, x = self.block3(x)
 
         # Bottleneck layer
         x = self.connecting_layer(x)
-        return x, [skip1, skip2, skip3]
+        return x, [skip3, skip2, skip1]
     
 class ConvBlockUp(nn.Module):
     """ A single expanding block that upsamples and concatenates with corresponding contracting block. """
     def __init__(self, in_channels, out_channels):
         super().__init__()
 
-        self.upsample = nn.ConvTranspose2d(in_channels, out_channels, kernel_size=2, stride=1)
+        self.upsample = nn.ConvTranspose2d(in_channels, in_channels, kernel_size=2, stride=2)
+        self.dropout = nn.Dropout()
         self.block_up = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
+            nn.Conv2d(in_channels*2, out_channels, kernel_size=3, padding=1), # in_channels*2 to account for concatenation
             nn.ReLU(inplace=True),
             nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1),
             nn.ReLU(inplace=True)
@@ -74,15 +75,17 @@ class ConvBlockUp(nn.Module):
 
         # Concatenate along channel dimension
         x = torch.cat([x, skip_connection], dim=1)
-        return self.block_up(x)
+        x = self.dropout(x)
+        x = self.block_up(x)
+        return x
 
 class Expanding(nn.Module):
     """ Decoder that gradually reconstructs the segmented mask. """
     def __init__(self):
         super().__init__()
 
-        self.block1 = ConvBlockUp(448, 224),
-        self.block2 = ConvBlockUp(224, 112), 
+        self.block1 = ConvBlockUp(448, 224)
+        self.block2 = ConvBlockUp(224, 112)
         self.block3 = ConvBlockUp(112, 112) 
 
         self.final_conv = nn.Conv2d(112, 1, kernel_size=1)
@@ -105,3 +108,4 @@ class UNet(nn.Module):
     def forward(self, x):
         x, skip_connections = self.encoder(x)
         return self.decoder(x, skip_connections)
+    
