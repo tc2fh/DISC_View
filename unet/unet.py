@@ -88,7 +88,8 @@ class Expanding(nn.Module):
         self.block2 = ConvBlockUp(224, 112)
         self.block3 = ConvBlockUp(112, 112) 
 
-        self.final_conv = nn.Conv2d(112, 1, kernel_size=1)
+        # final layer should have 2 channels (od and oc masks)
+        self.final_conv = nn.Conv2d(112, 2, kernel_size=1)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self,x, skip_connections):
