@@ -18,7 +18,7 @@ class GlaucomaDataset(Dataset):
         # Pre-processing images: convert to RGB array, convert to tensor, resize
         for img in self.img_filenames:
             img_name = os.path.join(images_path, img)
-            img = np.array(Image.open(img_name).convert('RGB'))
+            img = np.array(Image.open(img_name).convert('L')) # convert to grayscale (one channel)
             img = transforms.functional.to_tensor(img)
             img = transforms.functional.resize(img, size=(256,256), interpolation=Image.BILINEAR)
             self.images.append(img)
@@ -46,10 +46,4 @@ class GlaucomaDataset(Dataset):
         return len(self.img_filenames)
     
     def __getitem__(self, idx):
-        img_path = os.path.join(self.images_path, self.img_filenames[idx])
-        img = Image.open(img_path).convert("RGB")
-
-        mask_path = os.path.join(self.masks_path, self.mask_filenames[idx])
-        mask = Image.open(mask_path)
-
-        return img, mask
+        return self.images[idx], self.masks[idx]
