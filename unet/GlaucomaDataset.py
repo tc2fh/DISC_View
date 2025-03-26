@@ -42,8 +42,7 @@ class GlaucomaDataset(Dataset):
             self.masks.append(torch.cat([od, oc], dim=0))
 
     def __len__(self):
-        # Return number of images
         return len(self.img_filenames)
     
     def __getitem__(self, idx):
-        return self.images[idx], self.masks[idx]
+        return self.images[idx], self.img_filenames[idx], self.masks[idx], self.mask_filenames[idx]
