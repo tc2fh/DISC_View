@@ -5,15 +5,24 @@ import torchvision.transforms as transforms
 from PIL import Image
 from torch.utils.data import Dataset
 from sklearn.model_selection import train_test_split
+import pandas
 
 class GlaucomaDataset(Dataset):
-    def __init__(self, images_path, masks_path, img_filenames, mask_filenames):
+    def __init__(self, images_path, masks_path, img_filenames, mask_filenames, bbox_df=pd.DataFrame()):
         self.images_path = images_path
         self.masks_path = masks_path
         self.img_filenames = img_filenames
         self.mask_filenames = mask_filenames
         self.images = [] 
         self.masks = []
+        self.bboxes = {}
+
+        # Load bounding box data
+        self.bbox_data = bbox_df
+        
+        # Store bounding boxes in a dictionary for quick lookup
+        for _, row in self.bbox_data.iterrows():
+            self.bboxes[row['image_path']] = [row['x1'], row['y1'], row['x2'], row['y2']]
 
         # Pre-processing images: convert to RGB array, convert to tensor, resize
         for img in self.img_filenames:
