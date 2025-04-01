@@ -58,8 +58,10 @@ class GlaucomaDatasetBoundingBoxes(GlaucomaDataset):
 
     def __getitem__(self, idx):
         image, img_filename, mask, mask_filename = super().__getitem__(idx)
+        # Generate bounding box mask (same size as image)
+        bbox_mask = np.zeros([1, 256, 256])
+        x_min, y_min, x_max, y_max = self.bbox_df[self.bbox_df["image_path"] == img_filename][["x1", "y1", "x2", "y2"]].values[0]
+        bbox_mask[y_min:y_max, x_min:x_max] = 1
+        bbox_mask = torch.tensor(bbox_mask, dtype=torch.float32)
 
-        # Retrieve bounding boxes from the dataframe
-        bbox = self.bbox_df[self.bbox_df["image_path"] == img_filename][["x1", "y1", "x2", "y2"]].values
-
-        return image, img_filename, mask, mask_filename, torch.tensor(bbox, dtype=torch.float32)
+        return torch.cat([image, bbox_mask], dim=0), img_filename, mask, mask_filename
