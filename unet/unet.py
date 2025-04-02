@@ -124,84 +124,90 @@ class UNet(nn.Module):
 
 
 class SEBlock(nn.Module):
-    """ Squeeze-and-Excitation Block: Enhances important feature channels. """
-
-    def __init__(self, channels, reduction=16):
+    """ Squeeze-and-Excitation Block for Channel Attention """
+    def __init__(self, in_channels, reduction=16):
         super(SEBlock, self).__init__()
-        self.global_avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.global_avg_pool = nn.AdaptiveAvgPool2d(1)  # Pool across spatial dims
         self.fc = nn.Sequential(
-            nn.Linear(channels, channels // reduction),
+            nn.Linear(in_channels, in_channels // reduction, bias=False),
             nn.ReLU(inplace=True),
-            nn.Linear(channels // reduction, channels),
+            nn.Linear(in_channels // reduction, in_channels, bias=False),
             nn.Sigmoid()
         )
 
     def forward(self, x):
         b, c, _, _ = x.size()
-        y = self.global_avg_pool(x).view(b, c)  # Squeeze
-        y = self.fc(y).view(b, c, 1, 1)  # Excitation
-        return x * y.expand_as(x)  # Scale feature maps
+        y = self.global_avg_pool(x).view(b, c)  # Global pooling
+        y = self.fc(y).view(b, c, 1, 1)  # Fully connected layers
+        return x * y.expand_as(x)  # Re-weight feature maps
 
 
 class AttentionGate(nn.Module):
-    """ Attention Gate: Filters skip connection information to keep only relevant spatial regions. """
+    """ Attention Gate for Spatial Feature Selection in Skip Connections """
 
     def __init__(self, in_channels, gating_channels, inter_channels):
         super(AttentionGate, self).__init__()
-        self.W_x = nn.Conv2d(in_channels, inter_channels,
-                             kernel_size=1, stride=1, padding=0, bias=False)
-        self.W_g = nn.Conv2d(gating_channels, inter_channels,
-                             kernel_size=1, stride=1, padding=0, bias=False)
-        self.psi = nn.Conv2d(inter_channels, 1, kernel_size=1,
-                             stride=1, padding=0, bias=True)
+
+        self.W_x = nn.Conv2d(in_channels, inter_channels, kernel_size=1, stride=1, padding=0, bias=False)
+        
+        # **Fix: Ensure W_g expects the correct number of input channels**
+        self.W_g = nn.Conv2d(gating_channels, inter_channels, kernel_size=1, stride=1, padding=0, bias=False)
+        
+        self.psi = nn.Conv2d(inter_channels, 1, kernel_size=1, stride=1, padding=0, bias=True)
         self.relu = nn.ReLU(inplace=True)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x, g):
-        x1 = self.W_x(x)  # Process skip connection
-        g1 = self.W_g(g)  # Process gating signal from decoder
-        psi = self.relu(x1 + g1)  # Combine information
+        """
+        x: Skip connection feature map (from encoder)
+        g: Gating feature map (from decoder)
+        """
+
+        g = F.interpolate(g, size=x.shape[2:], mode='bilinear', align_corners=True)  # Upsample gating signal
+        print(f'x: {x.shape}. g: {g.shape}')
+        x1 = self.W_x(x)  # Transform skip connection
+        g1 = self.W_g(g)  # **Ensure W_g matches g's channels**
+        psi = self.relu(x1 + g1)  # Element-wise addition
         psi = self.sigmoid(self.psi(psi))  # Generate attention map
-        return x * psi  # Apply attention to skip connection
+        
+        return x * psi  # Weight input feature map by attention
 
 
-# ----------------------------
-# 🔹 UNet with SEBlock and AttentionGate
-# ----------------------------
 class UNetWithAttention(nn.Module):
-    """ UNet with Attention Gates in skip connections & SEBlocks in bottleneck. """
-
+    """ UNet with Attention Gates in Skip Connections and SEBlock in Bottleneck """
+    
     def __init__(self, in_channels=1, out_channels=2):
         super().__init__()
 
-        self.encoder = Contracting(in_channels)  # Standard UNet Encoder
-        self.decoder = Expanding()  # Standard UNet Decoder
+        self.encoder = Contracting(in_channels)
+        self.decoder = Expanding()
 
-        # 🔹 Attention Gates for Skip Connections
-        self.att_gate1 = AttentionGate(
-            448, 448, 224)  # Deepest skip connection
-        self.att_gate2 = AttentionGate(224, 224, 112)
-        # Shallowest skip connection
-        self.att_gate3 = AttentionGate(112, 112, 56)
+        # **Attention Gates for Skip Connections**
+        self.attn_gate1 = AttentionGate(448, 448, 224)  # Largest skip connection
+        self.attn_gate2 = AttentionGate(224, 224, 112)
+        self.attn_gate3 = AttentionGate(112, 112, 56)   # Smallest skip connection
 
-        # 🔹 SE Block for Bottleneck (Enhancing Important Feature Channels)
-        self.se_block = SEBlock(448)
+        # **Squeeze-and-Excitation Block in Bottleneck**
+        self.se_block = SEBlock(448)  
 
     def forward(self, x):
-        # Encoder Pass (Save Skip Connections)
+        # **Encoder Forward Pass**
         x, skip_connections = self.encoder(x)
 
-        # Apply Squeeze-and-Excitation in Bottleneck
+        # **Apply SEBlock in the Bottleneck**
         x = self.se_block(x)
 
-        # Apply Attention Gates to Skip Connections
-        skip_connections[0] = self.att_gate1(
-            skip_connections[0], x)  # Deepest skip connection
-        skip_connections[1] = self.att_gate2(skip_connections[1], x)
-        skip_connections[2] = self.att_gate3(
-            skip_connections[2], x)  # Shallowest skip connection
+        # **Apply Attention Gates to Skip Connections**
+        print(f"skip_connections[0]: {skip_connections[0].shape}. x: {x.shape}")
+        skip_connections[0] = self.attn_gate1(skip_connections[0], x)
+        print(f"skip_connections[1]: {skip_connections[1].shape}. x: {x.shape}")
+        skip_connections[1] = self.attn_gate2(skip_connections[1], x)
+        print(f"skip_connections[2]: {skip_connections[2].shape}. x: {x.shape}")
+        skip_connections[2] = self.attn_gate3(skip_connections[2], x)
 
-        # Decoder Pass
-        x = self.decoder(x, skip_connections)
+        # **Decoder Forward Pass**
+        x = self.decoder.block1(x, skip_connections[0])
+        x = self.decoder.block2(x, skip_connections[1])
+        x = self.decoder.block3(x, skip_connections[2])
 
-        return x  # Final Segmentation Mask Output
+        return self.decoder.final_conv(x)  # Output segmentation mask
