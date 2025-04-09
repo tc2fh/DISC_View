@@ -7,7 +7,7 @@ from torch.utils.data import Dataset
 
 
 class GlaucomaDataset(Dataset):
-    def __init__(self, images_path, masks_path, img_filenames, mask_filenames):
+    def __init__(self, images_path, masks_path, img_filenames, mask_filenames, refuge=False):
         self.images_path = images_path
         self.masks_path = masks_path
         self.img_filenames = img_filenames
@@ -30,8 +30,12 @@ class GlaucomaDataset(Dataset):
             mask = np.array(Image.open(mask_name, mode='r'))
 
             # Create binary masks for optic disc and optic cup classes
-            od = (mask > 0).astype(np.float32)
-            oc = (mask > 1.).astype(np.float32)
+            if refuge:
+                od = (mask == 128).astype(np.float32)
+                oc = (mask == 0).astype(np.float32)
+            else:
+                od = (mask > 0).astype(np.float32)
+                oc = (mask > 1.).astype(np.float32)
 
             # Convert to tensor and add batch dimension
             od = torch.from_numpy(od[None, :, :])  # (1, Height, Width)
