@@ -7,7 +7,7 @@ from torch.utils.data import Dataset
 
 
 class GlaucomaDataset(Dataset):
-    def __init__(self, images_path, masks_path, img_filenames, mask_filenames, refuge=False):
+    def __init__(self, images_path, masks_path, img_filenames, mask_filenames, refuge=False, input_img_size=256):
         self.images_path = images_path
         self.masks_path = masks_path
         self.img_filenames = img_filenames
@@ -21,7 +21,7 @@ class GlaucomaDataset(Dataset):
             img = np.array(Image.open(img_name).convert('RGB'))
             img = transforms.functional.to_tensor(img)
             img = transforms.functional.resize(
-                img, size=(256, 256), interpolation=Image.BILINEAR)
+                img, size=(input_img_size, input_img_size), interpolation=Image.BILINEAR)
             self.images.append(img)
 
         # # Pre-processing masks: convert to array, create binary masks, convert to tensors, resize
@@ -43,9 +43,9 @@ class GlaucomaDataset(Dataset):
 
             # Resize using nearest neighbor interpolation
             od = transforms.functional.resize(
-                od, size=(256, 256), interpolation=Image.NEAREST)
+                od, size=(input_img_size, input_img_size), interpolation=Image.NEAREST)
             oc = transforms.functional.resize(
-                oc, size=(256, 256), interpolation=Image.NEAREST)
+                oc, size=(input_img_size, input_img_size), interpolation=Image.NEAREST)
             self.masks.append(torch.cat([od, oc], dim=0))
 
     def __len__(self):
@@ -56,16 +56,29 @@ class GlaucomaDataset(Dataset):
 
 
 class GlaucomaDatasetBoundingBoxes(GlaucomaDataset):
-    def __init__(self, images_path, masks_path, img_filenames, mask_filenames, bbox_df):
-        super().__init__(images_path, masks_path, img_filenames, mask_filenames)
+    def __init__(self, images_path, masks_path, img_filenames, mask_filenames, bbox_df, input_img_size):
+        super().__init__(images_path, masks_path, img_filenames, mask_filenames, input_img_size)
         self.bbox_df = bbox_df  # Store bounding box dataframe
 
     def __getitem__(self, idx):
         image, img_filename, mask, mask_filename = super().__getitem__(idx)
-        # Generate bounding box mask (same size as image)
-        bbox_mask = np.zeros([1, 256, 256])
-        x_min, y_min, x_max, y_max = self.bbox_df[self.bbox_df["image_path"] == img_filename][["x1", "y1", "x2", "y2"]].values[0]
-        bbox_mask[y_min:y_max, x_min:x_max] = 1
-        bbox_mask = torch.tensor(bbox_mask, dtype=torch.float32)
-
-        return torch.cat([image, bbox_mask], dim=0), img_filename, mask, mask_filename
+        
+        # Extract the bounding box coordinates for the current image.
+        # This returns a list: [tensor_x1, tensor_y1, tensor_x2, tensor_y2]
+        bbox_coords_list = self.bbox_df[self.bbox_df["image_path"] == img_filename][["x1", "y1", "x2", "y2"]].values[0]
+        
+        # Convert each coordinate to an integer tensor if needed
+        bbox_list = [torch.tensor(coord, dtype=torch.int32) for coord in bbox_coords_list]
+        
+        # Stack the list into a single tensor of shape [num_boxes, 4]
+        # First, reshape each tensor (if necessary) to ensure they have the same shape (e.g., [8])
+        # Then stack along a new dimension and transpose so that each box is a row.
+        bbox_tensor = torch.stack(bbox_list, dim=-1)  # This yields shape [8, 4]
+        
+        return {
+            "image": image,
+            "image_filename": img_filename,
+            "mask": mask,
+            "mask_filename": mask_filename,
+            "bbox": bbox_tensor  # Now a tensor of shape [8, 4]
+        }
