@@ -76,9 +76,9 @@ Thanks to Dr. Arjun Dirghangi and Dr. Aiying Zhang for their support and guidanc
 │   ├── GlaucomaDataset.py           # Code for creating a PyTorch DataSet for fundus images
 │   ├── unet.py                      # Code for U-Net model architecture
 |   ├── unet_segmentation.ipynb      # Python notebook for training and evaluating the U-Net model
-|   ├── model_hybrid_state_dict.pth
-|   ├── model_refuge_state_dict.pth
-│   └── model_state_dict.pth        
+|   ├── model_hybrid_state_dict.pth  # Model weights for U-Net with hybrid loss function (BEST)
+|   ├── model_refuge_state_dict.pth  # Model weights for U-Net trained with REFUGE data
+│   └── model_state_dict.pth         # Model weights for U-Net with BCE loss only 
 ├── Medical-SAM2                     # git submodule forked from https://github.com/SuperMedIntel/Medical-SAM2
 |   └── medsam2-fine-tune.ipynb      # Python notebook for training and evaluating the Medical-SAM2 architecture
 └── SEIDS_Conference_Paper.pdf       # Research paper detailing project work
