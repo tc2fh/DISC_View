@@ -47,7 +47,7 @@ def fill_contours(layer, is_disc, subject):
     cv2.imwrite(file_name, filled)
 
 
-psd = PSDImage.open("Subject1-cd1-1.psd")
+psd = PSDImage.open("Subject1-cd1-2.psd")
 print(len(psd._layers))
 viewport = [0, 0, psd[0].size[0], psd[0].size[1]]
 for idx, layer in enumerate(psd):
@@ -55,4 +55,4 @@ for idx, layer in enumerate(psd):
         fill_contours(layer.composite(viewport=viewport),
                     is_disc=idx == 1, subject="Subject1-cd1")
     else:
-        layer.composite(viewport=viewport).save('Subject1-cd1-1.png')
+        layer.composite(viewport=viewport).save('Subject1-cd1-2.png')
