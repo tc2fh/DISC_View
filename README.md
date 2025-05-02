@@ -76,6 +76,7 @@ Thanks to Dr. Arjun Dirghangi and Dr. Aiying Zhang for their support and guidanc
 │   ├── GlaucomaDataset.py           # Code for creating a PyTorch DataSet for fundus images
 │   ├── unet.py                      # Code for U-Net model architecture
 |   ├── unet_segmentation.ipynb      # Python notebook for training and evaluating the U-Net model
+|   ├── clinic_images.ipynb          # 
 |   ├── model_hybrid_state_dict.pth  # Model weights for U-Net with hybrid loss function (BEST)
 |   ├── model_refuge_state_dict.pth  # Model weights for U-Net trained with REFUGE data
 │   └── model_state_dict.pth         # Model weights for U-Net with BCE loss only 
