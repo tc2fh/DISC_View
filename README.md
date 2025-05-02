@@ -67,3 +67,18 @@ Glaucoma is a major cause of irreversible blindness, and current screening metho
 ## Acknowledgments
 
 Thanks to Dr. Arjun Dirghangi and Dr. Aiying Zhang for their support and guidance.
+
+## File Structure
+
+.
+├── unet
+│   ├── GlaucomaDataset.py           # Code for creating a PyTorch DataSet for fundus images
+│   ├── unet.py                      # Code for U-Net model architecture
+|   ├── unet_segmentation.ipynb      # Python notebook for training and evaluating the U-Net model
+|   ├── model_hybrid_state_dict.pth  #
+|   ├── model_refuge_state_dict.pth  #
+│   └── model_state_dict.pth         #
+├── CNAME
+├── index.html
+├── rate.html
+└── README.md
