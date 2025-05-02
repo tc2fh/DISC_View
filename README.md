@@ -81,5 +81,8 @@ Thanks to Dr. Arjun Dirghangi and Dr. Aiying Zhang for their support and guidanc
 │   └── model_state_dict.pth         # Model weights for U-Net with BCE loss only 
 ├── Medical-SAM2                     # git submodule forked from https://github.com/SuperMedIntel/Medical-SAM2
 |   └── medsam2-fine-tune.ipynb      # Python notebook for training and evaluating the Medical-SAM2 architecture
+├── utils
+|   ├── psd-loader.py                # Loads .psd files with annotations on separate layers to create a .png for "ground-truth" masks
+|   └── bbox-annotator.py            # Loads a widget to draw a bounding box on an image and save the corresponding coordinates
 └── SEIDS_Conference_Paper.pdf       # Research paper detailing project work
 ```
