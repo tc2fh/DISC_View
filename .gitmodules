@@ -1,0 +1,3 @@
+[submodule "Medical-SAM2"]
+	path = Medical-SAM2
+	url = git@github.com:djl1626/Medical-SAM2.git
