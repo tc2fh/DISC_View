@@ -47,9 +47,11 @@ def fill_contours(layer, is_disc, subject):
     file_name = f'{subject}-disc.png' if is_disc else f'{subject}-cup.png'
     cv2.imwrite(file_name, filled)
 
-
+# open the image
 psd = PSDImage.open("Subject1-cd1-2.psd")
 print(len(psd._layers))
+
+# Set the viewport boundary to get the masks to be the right size when interpolating
 viewport = [0, 0, psd[0].size[0], psd[0].size[1]]
 for idx, layer in enumerate(psd):
     if idx > 0:
