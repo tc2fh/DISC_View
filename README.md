@@ -18,7 +18,7 @@ Glaucoma is a major cause of irreversible blindness, and current screening metho
 ## Objective
 
 - Segment optic nerve head features under glare, blur, and low contrast
-- Enable real-time scoring using clinical metrics like DDLS
+- Enable real-time scoring using clinical metrics like Disc-Damage-Likelihood-Scale (DDLS)
 - Improve accessibility to glaucoma screening tools
 
 ## Datasets
