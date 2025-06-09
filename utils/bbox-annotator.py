@@ -4,6 +4,7 @@ from matplotlib.widgets import RectangleSelector
 import numpy as np
 from PIL import Image
 import pandas as pd
+import sys
 
 
 class MultiBBoxSelector:
@@ -161,7 +162,7 @@ class MultiBBoxSelector:
         df = pd.DataFrame(self.bbox_data)
 
         # Save to CSV
-        save_path = 'bounding_boxes.csv' # update file path as needed
+        save_path = 'bounding_boxes.csv'  # update file path as needed
         df.to_csv(save_path, index=False)
         print(f"Bounding boxes saved to {save_path}")
         print(df)
@@ -169,6 +170,9 @@ class MultiBBoxSelector:
 
 # Example usage
 if __name__ == "__main__":
-    # Change this to the path of your image folder
-    folder_path = "Subject-4"
+    if len(sys.argv) != 2:
+        print("Usage: python bbox-annotator.py <image_folder_path>")
+        sys.exit(1)
+    # Depending on the folder structure, you may need to include a root in folder_path
+    folder_path = sys.argv[1]
     MultiBBoxSelector(folder_path)
