@@ -42,3 +42,6 @@ data/
 # Ignore data directory
 /data/
 /progress_reports/
+
+logs/
+runs/

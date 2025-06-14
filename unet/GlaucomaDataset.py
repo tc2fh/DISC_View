@@ -57,7 +57,7 @@ class GlaucomaDataset(Dataset):
 
 class GlaucomaDatasetBoundingBoxes(GlaucomaDataset):
     def __init__(self, images_path, masks_path, img_filenames, mask_filenames, bbox_df, input_img_size):
-        super().__init__(images_path, masks_path, img_filenames, mask_filenames, input_img_size)
+        super().__init__(images_path, masks_path, img_filenames, mask_filenames, input_img_size=input_img_size)
         self.bbox_df = bbox_df  # Store bounding box dataframe
 
     def __getitem__(self, idx):
